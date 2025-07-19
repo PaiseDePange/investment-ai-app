@@ -47,7 +47,7 @@ export default function DCFPage() {
   const fetchFromYahoo = async () => {
     if (!form.ticker) return;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/yfinance?ticker=${form.ticker}`);
+      const res = await fetch(`https://PaiseDePange.onrender.com/api/yfinance?ticker=${form.ticker}`);
       const data = await res.json();
       // Optional: log fetched assumptions for debugging
       console.log("🔍 Auto-calculated assumptions:", data);
@@ -201,7 +201,7 @@ export default function DCFPage() {
         className="mt-6 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         onClick={async () => {
           try {
-            const res = await fetch('http://127.0.0.1:8000/api/dcf', {
+            const res = await fetch('https://PaiseDePange.onrender.com/api/dcf', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -319,7 +319,7 @@ export default function DCFPage() {
         onClick={async () => {
           if (!valuationResult || !form) return;
 
-          const res = await fetch("http://127.0.0.1:8000/api/dcf/sensitivity", {
+          const res = await fetch("https://PaiseDePange.onrender.com/api/dcf/sensitivity", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
