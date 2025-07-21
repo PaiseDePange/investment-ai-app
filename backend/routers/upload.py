@@ -1,7 +1,8 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 import pandas as pd
 import io
+from openpyxl import load_workbook
 from collections import Counter
 
 router = APIRouter()
@@ -45,15 +46,24 @@ def extract_table(df, start_label, start_row_offset, col_count=11):
 @router.post("/upload-excel")
 async def upload_excel(file: UploadFile = File(...)):
     contents = await file.read()
-    df_all = pd.read_excel(io.BytesIO(contents), sheet_name="Data Sheet", header=None, engine="openpyxl")
+
+    wb = load_workbook(io.BytesIO(contents), data_only=True)
+    ws = wb["Data Sheet"]
+    df_all = pd.DataFrame(ws.values)
 
     try:
         df_meta = extract_table(df_all, "META", 0, 2)
         df_meta.columns = ["Label", "Value"]
         df_meta = df_meta.set_index("Label")
 
-        current_price = float(df_meta.loc["Current Price", "Value"])
-        market_cap = float(df_meta.loc["Market Capitalization", "Value"])
+        def safe_get(label):
+            try:
+                return float(df_meta.loc[label, "Value"])
+            except:
+                return 0.0
+
+        current_price = safe_get("Current Price")
+        market_cap = safe_get("Market Capitalization")
 
         df_bs = extract_table(df_all, "BALANCE SHEET", 1).set_index("Report Date")
         df_pl = extract_table(df_all, "PROFIT & LOSS", 1).set_index("Report Date")
@@ -61,23 +71,29 @@ async def upload_excel(file: UploadFile = File(...)):
         revenue_row = df_pl.loc["Sales"].dropna()
         tax_row = df_pl.loc["Tax"].dropna()
         depreciation_row = df_pl.loc["Depreciation"].dropna()
-        share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna()
+        share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna() if "No. of Equity Shares" in df_bs.index else pd.Series([0])
 
         calculated_ebit = revenue_row[-1] - sum(df_pl.loc[row].dropna()[-1] for row in [
             "Raw Material Cost", "Change in Inventory", "Power and Fuel",
             "Other Mfr. Exp", "Employee Cost", "Selling and admin", "Other Expenses"
         ] if row in df_pl.index)
         latest_revenue = revenue_row[-1]
-        ebit_margin = round((calculated_ebit / latest_revenue) * 100, 1)
-        tax_rate = round((tax_row[-1]/calculated_ebit)*100, 1)
-        depreciation_pct = round((depreciation_row[-1]/latest_revenue)*100, 1)
 
-        shares_outstanding = round(share_outstanding_row[-1]/1e7, 2)
+        ebit_margin = round((calculated_ebit / latest_revenue) * 100, 1) if latest_revenue else 0
+        tax_rate = round((tax_row[-1]/calculated_ebit)*100, 1) if calculated_ebit else 0
+        depreciation_pct = round((depreciation_row[-1]/latest_revenue)*100, 1) if latest_revenue else 0
 
-        debt = float(df_bs.loc["Borrowings"].dropna()[-1])
-        investments = float(df_bs.loc["Investments"].dropna()[-1])
-        cash = float(df_bs.loc["Cash & Bank"].dropna()[-1])
+        shares_outstanding = round(share_outstanding_row[-1]/1e7, 2) if not share_outstanding_row.empty else 0
+
+        debt = float(df_bs.loc["Borrowings"].dropna()[-1]) if "Borrowings" in df_bs.index else 0
+        investments = float(df_bs.loc["Investments"].dropna()[-1]) if "Investments" in df_bs.index else 0
+        cash = float(df_bs.loc["Cash & Bank"].dropna()[-1]) if "Cash & Bank" in df_bs.index else 0
         net_debt = debt - (investments + cash)
+
+        missing_keys = []
+        if current_price == 0: missing_keys.append("Current Price")
+        if shares_outstanding == 0: missing_keys.append("Shares Outstanding")
+        if latest_revenue == 0: missing_keys.append("Sales")
 
         assumptions = {
             "ebit_margin": ebit_margin,
@@ -93,7 +109,9 @@ async def upload_excel(file: UploadFile = File(...)):
             "period_y": 15,
             "shares_outstanding": shares_outstanding,
             "net_debt": net_debt,
-            "latest_revenue": latest_revenue
+            "latest_revenue": latest_revenue,
+            "current_price": current_price,
+            "missing_fields": missing_keys
         }
 
         return JSONResponse(content=assumptions)
