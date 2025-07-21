@@ -52,7 +52,7 @@ async def upload_excel(file: UploadFile = File(...)):
     df_all = pd.DataFrame(ws.values)
 
     try:
-        df_meta = extract_table(df_all, "META", 0, 2)
+        df_meta = extract_table(df_all, "META", 1, 2)
         df_meta.columns = ["Label", "Value"]
         df_meta = df_meta.set_index("Label")
 
