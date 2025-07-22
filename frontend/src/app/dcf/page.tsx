@@ -38,6 +38,9 @@ export default function DCFPage() {
 
   useEffect(() => {
     if (Object.keys(assumptions).length > 0) {
+      if (assumptions.missing_fields?.length > 0) {
+        console.warn("📉 Missing fields in upload:", assumptions.missing_fields.join(", "));
+      }
       setForm((prev) => ({
         ...prev,
         base_revenue: assumptions.latest_revenue?.toString() || '',
@@ -103,7 +106,11 @@ export default function DCFPage() {
     <main className="min-h-screen p-6 bg-white text-black dark:bg-zinc-900 dark:text-white">
       <Disclaimer />
       <h1 className="text-2xl font-bold mb-4">📊 DCF Valuation</h1>
-
+      {assumptions.company_name && (
+        <div className="text-xl font-semibold text-center mb-4">
+          🏷️ {assumptions.company_name}
+        </div>
+      )}
       <div className="grid md:grid-cols-3 gap-6">
         {Object.entries({
           base_revenue: 'Latest Annual Revenue',
@@ -148,6 +155,12 @@ export default function DCFPage() {
       {Object.keys(assumptions).length > 0 && (
         <div className="mt-4 p-3 border-l-4 text-sm rounded bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-100 border-blue-400 dark:border-blue-300">
           📂 Assumptions auto-filled from uploaded Excel file. Please review/edit before running valuation.
+        </div>
+      )}
+      {assumptions.missing_fields?.length > 0 && (
+        <div className="mt-2 p-3 border-l-4 border-yellow-400 bg-yellow-50 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100 text-sm rounded">
+          ⚠️ Some values couldn't be extracted from the Excel file:{" "}
+          <strong>{assumptions.missing_fields.join(", ")}</strong>. You may need to enter them manually.
         </div>
       )}
 
