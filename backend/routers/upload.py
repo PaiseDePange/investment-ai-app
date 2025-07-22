@@ -73,8 +73,12 @@ async def upload_excel(file: UploadFile = File(...)):
         revenue_row = df_pl.loc["Sales"].dropna()
         tax_row = df_pl.loc["Tax"].dropna()
         depreciation_row = df_pl.loc["Depreciation"].dropna()
-        share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna() if "No. of Equity Shares" in df_bs.index else pd.Series([0])
-
+        
+        #share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna() if "No. of Equity Shares" in df_bs.index else pd.Series([0])
+        last = share_outstanding_row[-1]
+        second_last = share_outstanding_row.iloc[-2] if len(share_outstanding_row) > 1 else 0
+        shares_outstanding = round((second_last if last == 0 else last) / 1e7, 2)
+        
         calculated_ebit = revenue_row[-1] - sum(df_pl.loc[row].dropna()[-1] for row in [
             "Raw Material Cost", "Change in Inventory", "Power and Fuel",
             "Other Mfr. Exp", "Employee Cost", "Selling and admin", "Other Expenses"
@@ -116,6 +120,9 @@ async def upload_excel(file: UploadFile = File(...)):
             "missing_fields": missing_keys,
             "company_name": company_name
         }
+        for key, val in assumptions.items():
+            if isinstance(val, float):
+                assumptions[key] = round(val, 2)
 
         return JSONResponse(content=assumptions)
 
