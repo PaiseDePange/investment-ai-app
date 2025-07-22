@@ -8,7 +8,11 @@ from routers import upload  # assuming inside routers/upload.py
 app = FastAPI() 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://www.thinkinvestval.com",   # ✅ Production
+        "https://thinkinvestval.com"        # ✅ Without www
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
