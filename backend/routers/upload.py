@@ -55,6 +55,8 @@ async def upload_excel(file: UploadFile = File(...)):
         df_meta = extract_table(df_all, "META", 1, 2)
         df_meta.columns = ["Label", "Value"]
         df_meta = df_meta.set_index("Label")
+        
+        company_name = ws["B1"].value or "Could not find Company Name"
 
         def safe_get(label):
             try:
@@ -112,6 +114,7 @@ async def upload_excel(file: UploadFile = File(...)):
             "latest_revenue": latest_revenue,
             "current_price": current_price,
             "missing_fields": missing_keys
+            "company_name": company_name
         }
 
         return JSONResponse(content=assumptions)
