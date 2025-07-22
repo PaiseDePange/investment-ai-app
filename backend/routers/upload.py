@@ -74,7 +74,7 @@ async def upload_excel(file: UploadFile = File(...)):
         tax_row = df_pl.loc["Tax"].dropna()
         depreciation_row = df_pl.loc["Depreciation"].dropna()
         
-        #share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna() if "No. of Equity Shares" in df_bs.index else pd.Series([0])
+        share_outstanding_row = df_bs.loc["No. of Equity Shares"].dropna() if "No. of Equity Shares" in df_bs.index else pd.Series([0])
         last = share_outstanding_row[-1]
         second_last = share_outstanding_row.iloc[-2] if len(share_outstanding_row) > 1 else 0
         shares_outstanding = round((second_last if last == 0 else last) / 1e7, 2)
@@ -89,7 +89,7 @@ async def upload_excel(file: UploadFile = File(...)):
         tax_rate = round((tax_row[-1]/calculated_ebit)*100, 1) if calculated_ebit else 0
         depreciation_pct = round((depreciation_row[-1]/latest_revenue)*100, 1) if latest_revenue else 0
 
-        shares_outstanding = round(share_outstanding_row[-1]/1e7, 2) if not share_outstanding_row.empty else 0
+        #shares_outstanding = round(share_outstanding_row[-1]/1e7, 2) if not share_outstanding_row.empty else 0
 
         debt = float(df_bs.loc["Borrowings"].dropna()[-1]) if "Borrowings" in df_bs.index else 0
         investments = float(df_bs.loc["Investments"].dropna()[-1]) if "Investments" in df_bs.index else 0
