@@ -113,7 +113,7 @@ async def upload_excel(file: UploadFile = File(...)):
             "net_debt": net_debt,
             "latest_revenue": latest_revenue,
             "current_price": current_price,
-            "missing_fields": missing_keys
+            "missing_fields": missing_keys,
             "company_name": company_name
         }
 
