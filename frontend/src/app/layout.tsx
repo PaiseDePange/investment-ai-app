@@ -11,6 +11,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <nav className="max-w-6xl mx-auto p-4 flex gap-6 items-center">
             <Link href="/" className="font-bold text-blue-600">📊 Smart Valuation</Link>
             <Link href="/upload">Upload</Link>
+            <Link href="/health">Financial Health</Link>
             <Link href="/dcf">DCF</Link>
             <Link href="/eps">EPS</Link>
             <ThemeToggle />

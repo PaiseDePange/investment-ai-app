@@ -20,7 +20,7 @@ export default function SensitivityTable({
   sensitivityData
 }: Props) {
   const fetchSensitivity = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/dcf/sensitivity`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/dcf/sensitivity`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

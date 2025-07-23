@@ -21,9 +21,15 @@ type Assumptions = {
 type Store = {
   assumptions: Assumptions;
   setAssumptions: (a: Assumptions) => void;
+
+  calculated_metrics: Record<string, number[]>;
+  setMetrics: (metrics: Record<string, number[]>) => void;
 };
 
 export const useGlobalStore = create<Store>((set) => ({
   assumptions: {},
   setAssumptions: (a) => set({ assumptions: a }),
+
+  calculated_metrics: {}, // ✅ add this
+  setMetrics: (metrics) => set({ calculated_metrics: metrics })
 }));

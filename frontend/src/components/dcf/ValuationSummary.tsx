@@ -3,8 +3,11 @@ type Props = {
   currentPrice: string;
 };
 
-const formatINR = (num: number) =>
-  num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+function formatINR(value?: number) {
+  if (value == null || isNaN(value)) return "–";
+  return `₹${value.toLocaleString("en-IN")}`;
+}
 
 export default function ValuationSummary({ result, currentPrice }: Props) {
   const fv = result?.fair_value_per_share || 0;

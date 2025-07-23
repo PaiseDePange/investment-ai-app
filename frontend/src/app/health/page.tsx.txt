@@ -1,0 +1,182 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useGlobalStore } from '@/store/globalStore';
+import { Card } from '@/components/ui/card';
+import { Bar } from 'react-chartjs-2';
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// ✅ Color helper
+const colorFlag = (value: number, green: number, red: number) => {
+  if (value >= green) return 'text-green-600';
+  if (value <= red) return 'text-red-600';
+  return 'text-yellow-600';
+};
+
+// ✅ Robust date sorting for year labels like "Mar-2023"
+const sortYears = (years: string[]): string[] => {
+  return [...years].sort((a, b) => {
+    const dateA = new Date(`01-${a}`);
+    const dateB = new Date(`01-${b}`);
+    return dateA.getTime() - dateB.getTime();
+  });
+};
+
+// ✅ Chart config builder
+const getDynamicChartOptions = (data: number[], showPercent = false) => {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const buffer = (max - min) * 0.2 || 10;
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          color: '#4B5563',
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: {
+          color: '#4B5563',
+          maxRotation: 45,
+          minRotation: 30,
+        },
+        grid: {
+          color: '#E5E7EB',
+        },
+      },
+      y: {
+        suggestedMin: min - buffer,
+        suggestedMax: max + buffer,
+        ticks: {
+          color: '#4B5563',
+          callback: (value: string | number) =>
+            showPercent ? `${Number(value).toFixed(1)}%` : Number(value).toFixed(1),
+        },
+        grid: {
+          color: '#E5E7EB',
+        },
+      },
+    },
+  };
+};
+
+// ✅ Data formatting
+const formatChartData = (label: string, data: number[], years: string[]) => {
+  const minLen = Math.min(data.length, years.length);
+
+  return {
+    labels: years.slice(0, minLen),
+    datasets: [
+      {
+        label,
+        data: data.slice(0, minLen),
+        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 1,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+        borderRadius: 4,
+      },
+    ],
+  };
+};
+
+export default function FinancialHealthPage() {
+  const metrics = useGlobalStore((state) => state.calculated_metrics);
+  const years = metrics["years"] || [];
+  const sortedYears = Array.isArray(years) ? sortYears(years) : [];;
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  const metricsList = [
+    { key: 'ebitda_margin', label: 'EBITDA Margin (%)', green: 20, red: 5, percent: true },
+    { key: 'net_profit_margin', label: 'Net Profit Margin (%)', green: 15, red: 2, percent: true },
+    { key: 'roce', label: 'ROCE (%)', green: 20, red: 7, percent: true },
+    { key: 'roe', label: 'ROE (%)', green: 18, red: 5, percent: true },
+    { key: 'interest_coverage', label: 'Interest Coverage (x)', green: 5, red: 1, percent: false },
+    { key: 'debt_to_equity', label: 'Debt to Equity (x)', green: 0.5, red: 2, percent: false },
+    { key: 'fcf_margin', label: 'Free Cash Flow Margin (%)', green: 10, red: 0, percent: true },
+  ];
+
+  if (!hydrated || !metrics || Object.keys(metrics).length === 0) {
+    return (
+      <div className="text-center text-gray-500 p-8">
+        📂 No financial data available. Please upload a file first.
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-bold text-center">📊 Financial Health Check</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {metricsList.map(({ key, label, green, red, percent }) => {
+          const rawData = metrics[key];
+          const parsedData = Array.isArray(rawData)
+            ? rawData.map((val) => parseFloat(val as string)).filter((n) => !isNaN(n))
+            : [];
+
+          const alignedYears =
+            sortedYears.length >= parsedData.length
+              ? sortedYears
+                  .slice(sortedYears.length - parsedData.length)
+                  .map((y) => y.replace('Mar-', ''))
+              : Array(parsedData.length)
+                  .fill('')
+                  .map((_, i) => `Year ${i + 1}`);
+
+          return (
+            <Card key={key} className="shadow-sm h-[350px] flex flex-col justify-between">
+              <div className="p-4 space-y-2 flex-grow">
+                <h2 className="text-md font-semibold">{label}</h2>
+                {parsedData.length > 0 && (
+                  <>
+                    <p className={`text-xl font-bold ${colorFlag(parsedData.at(-1)!, green, red)}`}>
+                      {parsedData.at(-1)!.toFixed(1)}
+                      {percent ? '%' : ''}
+                    </p>
+
+                    <div className="relative w-full h-[200px]">
+                      <Bar
+                        data={formatChartData(label, parsedData, alignedYears)}
+                        options={getDynamicChartOptions(parsedData, percent)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

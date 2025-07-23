@@ -73,7 +73,7 @@ export default function DCFPage() {
 
   const runValuation = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/dcf`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/dcf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

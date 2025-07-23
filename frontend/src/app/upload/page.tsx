@@ -4,23 +4,23 @@ import React, { useState } from 'react';
 import Disclaimer from '@/components/Disclaimer';
 import { useGlobalStore } from "@/store/globalStore"; // Zustand
 import { Button } from "@/components/ui/button";
-
+//#import { useDCFStore } from "@/store/globalStore"; // or your actual path
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState("");
   const setAssumptions = useGlobalStore((state) => state.setAssumptions);
+  const setMetrics = useGlobalStore((state) => state.setMetrics); // ← NEW
 
   const handleUpload = async () => {
     if (!file) return;
-
     setStatus("Uploading...");
 
     try {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/api/upload-excel`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/upload-excel`, {
         method: "POST",
         body: formData,
       });
@@ -34,8 +34,17 @@ export default function UploadPage() {
 
       const data = await res.json();
       console.log("✅ Upload result:", data);
-      setAssumptions(data);
-      setStatus("✅ Data uploaded and assumptions stored.");
+
+      if (data.assumptions) {
+        setAssumptions(data.assumptions); // ✅ CORRECT
+        setStatus("✅ Data uploaded and assumptions stored.");
+      } else {
+        setStatus("⚠️ Upload succeeded but assumptions missing.");
+      }
+      if (data.calculated_metrics) {
+        setMetrics(data.calculated_metrics); // ✅ Store for /health
+      }
+
     } catch (err) {
       console.error("❌ Fetch/network error:", err);
       setStatus("❌ Upload failed. See console.");
