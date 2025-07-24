@@ -11,6 +11,14 @@ def calculate_metrics(pnl, bs, cf, years):
         return table.get(label, [0] * len(years))[:len(years)]
 
     revenue = get_values(pnl, "Sales")
+    raw_material_cost = get_values(pnl, "Raw Material Cost")
+    change_in_inventory = get_values(pnl, "Change in Inventory")
+    power_fule = get_values(pnl, "Power and Fuel")
+    other_mfr_exp = get_values(pnl, "Other Mfr. Exp")
+    emp_cost = get_values(pnl, "Employee Cost")
+    selling_admin = get_values(pnl, "Selling and admin")
+    other_exp = get_values(pnl, "Other Expenses")
+    other_income = get_values(pnl, "Other Income")
     net_profit = get_values(pnl, "Net profit")
     interest = get_values(pnl, "Interest")
     depreciation = get_values(pnl, "Depreciation")
@@ -22,17 +30,18 @@ def calculate_metrics(pnl, bs, cf, years):
     capex = get_values(bs, "Capital Work in Progress")
     net_block = get_values(bs, "Net Block")
 
+
     equity = [e + r for e, r in zip(equity_capital, reserves)]
     cash_and_investments = [(c or 0) + (i or 0) for c, i in zip(cash, investments)]
 
     min_len = min(len(revenue), len(net_profit), len(depreciation))
 
-    ebit = [r - i for r, i in zip(revenue[:min_len], interest[:min_len])]
-    ebitda = [e + d for e, d in zip(ebit, depreciation[:min_len])]
-
+    ebitda = [r-rmc-cii-pf-ome-ec-sa-oe for r, rmc, cii, pf, ome, ec, sa, oe in zip(revenue, raw_material_cost, change_in_inventory, power_fule, other_mfr_exp, emp_cost, selling_admin, other_exp[:min_len])]
+    ebit = [e - d for e, oi, d in zip(ebitda, other_income, depreciation)]
+    
     ebitda_margin = [safe_divide(e, r) * 100 for e, r in zip(ebitda, revenue[:min_len])]
     net_profit_margin = [safe_divide(n, r) * 100 for n, r in zip(net_profit[:min_len], revenue[:min_len])]
-    roce = [safe_divide(e, (eq + d - c)) * 100 for e, eq, d, c in zip(ebit, equity[:min_len], debt[:min_len], cash_and_investments[:min_len])]
+    roce = [safe_divide(e, (eq + d)) * 100 for e, eq, d in zip(ebit, equity[:min_len], debt[:min_len])]
     roe = [safe_divide(n, eq) * 100 for n, eq in zip(net_profit[:min_len], equity[:min_len])]
     interest_coverage = [safe_divide(e, i) for e, i in zip(ebit, interest[:min_len])]
     debt_to_equity = [safe_divide(d, eq) for d, eq in zip(debt[:min_len], equity[:min_len])]
